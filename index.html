@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rondas — Control operativo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#0b1428;--navy2:#17233d;--green:#079b72;--red:#e34b55;--amber:#e6a51c;--bg:#eef1f5;--border:#d5dce6;--text:#111b2e;--muted:#66758a;--white:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}.topbar{min-height:60px;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;display:flex;align-items:center;padding:0 18px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}.logo{width:31px;height:31px;border-radius:8px;background:var(--green);display:grid;place-items:center;font-weight:900}.brand small{display:block;color:#aab4c6;font-size:10px}.grow{flex:1}
+.pill{border:1px solid #39445b;border-radius:18px;padding:7px 12px;font-size:11px}.primary{border:0;border-radius:7px;background:var(--green);color:#fff;padding:9px 13px;font-weight:750}.secondary{border:1px solid var(--border);background:#fff;border-radius:7px;padding:9px 13px;font-weight:700}.danger{border:0;background:#fff0f1;color:#c93440;border-radius:7px;padding:8px 11px;font-weight:750}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}.loginbox{width:min(430px,100%);background:#fff;border:1px solid var(--border);border-radius:15px;padding:26px;box-shadow:0 10px 35px #0000000b}
+.loginbox h1{margin:12px 0 4px}.loginbox p{color:var(--muted);font-size:12px}.loginbox label{display:block;font-size:11px;font-weight:800;color:#66758a;margin-top:13px}.loginbox input,.loginbox select{width:100%;height:42px;border:1px solid var(--border);border-radius:7px;padding:0 10px;margin-top:5px;background:#fff}.loginbox button{width:100%;margin-top:17px}.codebox{display:none}.login-help{margin-top:12px;font-size:11px!important}
+.layout{max-width:1500px;margin:auto;padding:20px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px}
+.topcards{grid-column:1/-1;display:flex;gap:10px}.card{background:#fff;border:1px solid var(--border);border-radius:12px}.turn{width:280px;background:linear-gradient(145deg,var(--navy),#1c2b49);color:#fff;padding:18px;box-shadow:0 8px 20px #0b14281a}.turn div{font-size:11px;color:#c9d1df;margin-top:5px}.next{width:280px;padding:13px 15px}.next select{display:block;width:100%;border:0;background:#fff;margin-top:6px;font-weight:700}
+.sidebar,.main,.superbox{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 5px 18px #0b14280b}.sidehead{padding:15px;border-bottom:1px solid var(--border);font-weight:800}.round{display:flex;gap:12px;align-items:center;padding:13px;border-bottom:1px solid var(--border);cursor:pointer}.round.sel{background:#f1f3f6}.num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#eef1f5}.sel .num{background:var(--navy);color:#fff}.rmeta{font-size:10px;color:var(--muted);margin-top:2px}.round-info{min-width:0}.rmeta{display:flex;align-items:center;gap:5px}.status-dot{width:8px;height:8px;border-radius:50%;background:#c7ced8;display:inline-block;flex:0 0 8px}.round.finalizada .status-dot{background:var(--green)}.round.actual .status-dot{background:#e6a51c;box-shadow:0 0 0 3px #fff3d5}.round.pendiente .status-dot{background:#c7ced8}.round.actual{background:#fff8e8;border-left:4px solid var(--amber);padding-left:9px}.round.finalizada .rmeta{color:#008e69}.round.finalizada .num{background:#e8f8f3;color:#008e69}.round.pendiente .num{background:#eef1f5;color:#536177}.round.actual .rmeta{color:#a66a00;font-weight:800}.notify{margin:12px;width:calc(100% - 24px);height:36px;background:#fff;border:1px solid var(--navy);border-radius:7px;font-weight:750}
+.mainhead{padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}.mainhead h2{margin:0;font-size:17px}.sub{color:var(--muted);font-size:10px;margin-top:3px}.date{border:1px solid var(--border);border-radius:7px;padding:5px 7px;margin-left:auto}.date input{border:0;outline:0}.stats{display:flex;gap:7px}.badge{padding:6px 10px;border-radius:14px;font-size:10px;font-weight:800}.ag{color:#008e69;background:#effcf8}.ar{color:#d93c48;background:#fff0f1}
+.filters{padding:11px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap}.filters select{height:34px;border:1px solid var(--border);border-radius:6px;padding:0 9px;background:#fff}.tablewrap{overflow:auto}.table{min-width:1000px}.thead,.row{display:grid;grid-template-columns:minmax(205px,1.1fr) minmax(220px,1fr) minmax(180px,.8fr) minmax(240px,1.2fr) 135px;align-items:center}.thead{padding:10px 18px;background:#fafbfc;color:#7d8aa0;font-size:10px;font-weight:850}.row{min-height:112px;padding:12px 18px;border-top:1px solid #edf0f4;row-gap:8px}.row>.employee{grid-column:1}.row>.activity-actions{grid-column:2}.row>.task-field{grid-column:1 / -1;grid-row:2}.row>.obs-field{grid-column:3 / 5;grid-row:1}.row>.history{grid-column:5;grid-row:1}.employee{display:flex;gap:10px;align-items:center;font-weight:700}.avatar{width:35px;height:35px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:10px}.employee small{display:block;color:#8a96a8;font-size:10px;margin-top:2px}.toggle{display:flex;border:1px solid #dbe2ea;border-radius:7px;overflow:hidden;width:max-content}.toggle button{height:29px;padding:0 12px;border:0;background:#fff;color:#66758a;font-size:10px;font-weight:800}.toggle .on{background:var(--green);color:#fff}.toggle .off{background:var(--red);color:#fff}.field{height:35px;border:1px solid #d9dee7;border-radius:6px;padding:0 9px;width:165px;background:#fff}.obs{width:100%}.history{display:flex;gap:4px;flex-wrap:wrap}.history span{border:1px solid #dce3ec;border-radius:4px;padding:4px;font-size:9px;color:#8a97a8}.history .cur{border-color:#79d7c0;color:#008e69;background:#eefbf7}.remove{margin-left:6px}
+.modal-bg{display:none;position:fixed;inset:0;background:#10182b99;align-items:center;justify-content:center;padding:15px;z-index:10}.modal{width:min(680px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:12px;padding:20px;position:relative}.close{position:absolute;right:12px;top:8px;border:0;background:none;font-size:24px;color:#66758a}.att-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.att-sub{color:var(--muted);font-size:12px;margin:-7px 0 15px}.add-att{white-space:nowrap;padding:9px 11px}.add-employee{padding:12px;background:#f7fafc;border:1px solid #dfe6ed;border-radius:8px;margin:0 0 12px}.add-title{font-size:12px;font-weight:800;margin-bottom:8px}.add-grid{display:grid;grid-template-columns:1fr 180px auto;gap:8px}.add-grid .field{height:36px}.att-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:9px;border:1px solid #dfe6ed;border-radius:7px;margin:7px 0}.att-role{display:block;font-size:10px;color:#8a97a8}.att-row input{width:17px;height:17px}.controller{display:flex;gap:8px;align-items:center;margin-top:12px}.controller input{height:35px;flex:1;border:1px solid var(--border);border-radius:6px;padding:0 9px}.foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf0f4;margin-top:13px;padding-top:13px;color:var(--muted);font-size:11px}
+.checks{padding:15px 18px;border-top:1px solid var(--border)}.checks h3{font-size:13px;margin:0 0 10px}.checkrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #edf0f4}.yesno{display:flex;gap:5px}.yesno button{border:1px solid var(--border);background:#fff;border-radius:6px;padding:6px 10px;font-size:10px;font-weight:800}.yesno .yes{background:var(--green);color:#fff}.yesno .no{background:var(--red);color:#fff}.finishbar{padding:14px 18px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)}
+.locked{opacity:.72}.locked input,.locked select{background:#f5f6f8;color:#7b8798}.locked .toggle button,.locked .yesno button,.locked .remove{pointer-events:none;opacity:.55}.locked-note{padding:10px 18px;background:#f5f8fb;border-top:1px solid var(--border);color:#607087;font-size:11px;font-weight:700}.closure{padding:15px 18px;border-top:1px solid var(--border);background:#fff}.closure h3{font-size:13px;margin:0 0 10px}.closure-detail{width:100%;min-height:70px;border:1px solid #d9dee7;border-radius:6px;padding:9px;resize:vertical;margin-top:7px}.closure-actions{display:flex;justify-content:flex-end;margin-top:12px}.closure-done{padding:10px 12px;background:#effcf8;color:#008e69;border-radius:7px;font-size:11px;font-weight:800}
+.super{min-height:100vh;background:var(--bg)}.superlayout{max-width:1500px;margin:auto;padding:20px;display:grid;gap:16px}.superhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.superhead h1{margin:0;font-size:22px;color:var(--navy)}.supfilters{display:flex;gap:10px;flex-wrap:wrap}.supfilters label{display:flex;flex-direction:column;gap:5px;color:#526177;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.03em}.supfilters input,.supfilters select{height:36px;border:1px solid var(--border);border-radius:7px;padding:0 9px;background:#fff}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{padding:17px 18px;position:relative;overflow:hidden}.metric:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy)}.metric:nth-child(2):before{background:var(--green)}.metric:nth-child(3):before{background:var(--red)}.metric:nth-child(4):before{background:var(--amber)}.metric b{font-size:26px;color:var(--navy)}.metric small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.supertable{overflow:auto}.supertable table{width:100%;border-collapse:collapse;min-width:900px}.supertable th,.supertable td{text-align:left;padding:10px 12px;border-bottom:1px solid #edf0f4;font-size:11px}.supertable th{color:#65748a;background:#f5f7fa;text-transform:uppercase;letter-spacing:.03em;font-size:10px}.supertable td{color:#243149}.supactions{display:flex;gap:8px;flex-wrap:wrap}
+.actual-time{display:block;font-size:9px;color:#008e69;margin-top:3px;font-weight:750}.round.actual .actual-time{color:#a66a00}.sup-status{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:800}.sup-status.done{background:#eaf8f4;color:#008e69}.sup-status.active{background:#fff4d8;color:#9a6200}.sup-status.pending{background:#eef1f5;color:#66758a}.toast{position:fixed;right:20px;bottom:20px;background:var(--navy);color:#fff;padding:12px 16px;border-radius:8px;display:none;z-index:30}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:12px}.topcards{flex-wrap:wrap}.turn,.next{width:100%}.mainhead{flex-wrap:wrap}.date{margin-left:0}.summary{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.topbar{padding:0 10px}.pill{display:none}.layout,.superlayout{padding:10px}.summary{grid-template-columns:1fr}.loginbox{padding:21px}.thead{display:none}.table{min-width:0}.row{display:grid;grid-template-columns:minmax(0,1fr) auto;min-height:0;padding:12px;row-gap:9px}.row>.employee{grid-column:1;grid-row:1}.row>.activity-actions{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}.row>.task-field{grid-column:1 / -1;grid-row:2;width:100%;height:42px}.row>.obs-field{grid-column:1 / -1;grid-row:3;width:100%;height:42px}.row>.history{grid-column:1 / -1;grid-row:4}.toggle button{height:38px;padding:0 10px}.remove{margin-left:0}.field{width:100%}}
+
+/* === Modo oscuro operativo: alto contraste y lectura al sol === */
+:root{
+  --bg:#1b2129;--border:#3a4654;--text:#f3f6fa;--muted:#aeb9c8;--white:#252d37;
+  --navy:#111923;--navy2:#2a3440;--green:#10b981;--red:#ef5350;--amber:#f2b233;
+}
+body{background:var(--bg);color:var(--text)}
+.topbar{background:linear-gradient(135deg,#101720,#27313d);border-bottom:1px solid #3b4653}
+.brand small{color:#b8c3d0}.pill{border-color:#4a5665;color:#edf2f7}
+.primary{background:#0fa878;color:#fff}.secondary{background:#2b3440;color:#f4f7fa;border-color:#4a5665}.danger{background:#3b2428;color:#ff8e91}
+.login{background:#1b2129}.loginbox,.card,.sidebar,.main,.superbox,.modal{background:#252d37;border-color:#3a4654;box-shadow:0 10px 30px #00000038}
+.loginbox h1,.superhead h1{color:#f5f7fa}.loginbox p,.sub,.rmeta,.metric small{color:#aeb9c8}.loginbox label,.supfilters label{color:#c3ccd8}
+.loginbox input,.loginbox select,.next select,.filters select,.supfilters input,.supfilters select,.field,.controller input,.closure-detail{background:#1e2630;color:#f4f7fa;border-color:#465362}
+.loginbox input::placeholder,.field::placeholder,.controller input::placeholder,.closure-detail::placeholder{color:#8f9aaa}
+.topcards .next{background:#252d37}.turn{background:linear-gradient(145deg,#111923,#293542);box-shadow:0 8px 22px #00000038}.turn div{color:#c5cfdb}
+.sidebar,.main,.superbox{box-shadow:0 6px 20px #0000002b}.sidehead,.mainhead,.filters,.checks,.finishbar,.closure{border-color:#3a4654}
+.round{border-color:#36414d}.round.sel{background:#303a46}.num{background:#313b47;color:#e8edf3}.sel .num{background:#0f1824}.round.pendiente .num{background:#313b47;color:#cbd4df}.round.actual{background:#3a3120;border-left-color:var(--amber)}.round.actual .rmeta{color:#ffd26a}.round.finalizada .num{background:#173b33;color:#69e0ba}.round.finalizada .rmeta{color:#59d6ae}
+.status-dot{background:#718093}.round.finalizada .status-dot{background:#12c995}.round.actual .status-dot{background:#f2b233;box-shadow:0 0 0 3px #5a4822}.round.pendiente .status-dot{background:#718093}
+.notify{background:#252d37;color:#f4f7fa;border-color:#5a6675}
+.badge.ag{color:#5ce0ba;background:#153a31}.badge.ar{color:#ff8588;background:#452529}
+.filters select,.supfilters input,.supfilters select{color:#f4f7fa}.date{background:#252d37;border-color:#4a5665;color:#f4f7fa}.date input{background:transparent;color:#f4f7fa}
+.toggle{border-color:#4a5665}.toggle button{background:#202832;color:#c0cad6}.toggle .on{background:#0fa878;color:#fff}.toggle .off{background:#e64d52;color:#fff}
+.field{color:#f4f7fa}.obs{background:#1e2630}.history span{border-color:#485564;color:#aeb9c8}.history .cur{border-color:#17bd91;color:#5ce0ba;background:#173a32}
+.thead{background:#2d3743;color:#aeb9c8}.row{border-color:#37434f}.avatar{background:#101923}.employee small{color:#a3afbf}
+.checkrow{border-color:#394550}.yesno button{background:#202832;color:#d1d8e1;border-color:#4a5665}.yesno .yes{background:#0fa878;color:#fff}.yesno .no{background:#e64d52;color:#fff}
+.locked-note{background:#2c3540;color:#bac5d2;border-color:#3a4654}.closure{background:#252d37}.closure-done{background:#173a32;color:#5ce0ba}.closure-detail{color:#f4f7fa}
+.super{background:#1b2129}.superhead h1{color:#f5f7fa}.supfilters input,.supfilters select{background:#202832;border-color:#465362;color:#f4f7fa}.supertable table{background:#222a34}.supertable th,.supertable td{border-color:#3a4551}.supertable th{background:#2d3743;color:#aeb9c8}.supertable td{color:#e2e8f0}.metric{background:#252d37;border-color:#3a4654}.metric b{color:#f5f7fa}.metric:before{background:#7f8b9a}.metric:nth-child(2):before{background:#10b981}.metric:nth-child(3):before{background:#ef5350}.metric:nth-child(4):before{background:#f2b233}
+.sup-status.done{background:#173a32!important;color:#5ce0ba!important}.sup-status.active{background:#452529!important;color:#ff8588!important}.sup-status.pending{background:#3a3330!important;color:#ffd26a!important}
+.add-employee{background:#202832;border-color:#3d4957}.att-row{border-color:#3d4957;background:#252d37}.att-role{color:#a3afbf}.foot{border-color:#394550;color:#aeb9c8}
+.close{color:#bac5d2}.modal-bg{background:#090e16c7}
+
+/* Dashboard: promedio y alarmas */
+.activity-summary{display:grid;grid-template-columns:minmax(220px,.8fr) 1fr;gap:12px}
+.activity-card{padding:16px 18px;position:relative;overflow:hidden}
+.activity-card h3{margin:0 0 5px;font-size:12px}.activity-card .big{font-size:32px;font-weight:900;line-height:1.1}.activity-card small{color:var(--muted);font-size:10px}.activity-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.activity-period{border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--white)}
+.activity-period{display:flex;flex-direction:column;gap:4px}
+.activity-period-title{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:850}
+.activity-period b{font-size:22px;line-height:1.1}
+.activity-period span{font-size:10px;color:var(--muted)}
+.activity-period b{display:block;font-size:17px}.activity-period span{font-size:10px;color:var(--muted)}
+.alarm-box{margin:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--white);font-size:10px}.alarm-box b{font-size:11px}.alarm-status{display:block;color:var(--muted);margin-top:4px}.actual-time{display:block;font-size:9px;font-weight:800;color:var(--green);margin-top:3px}
+body:not(.light-theme) .activity-card,body:not(.light-theme) .activity-period,body:not(.light-theme) .alarm-box{background:#252d37;border-color:#3a4654}
+body.light-theme .activity-card,body.light-theme .activity-period,body.light-theme .alarm-box{background:#fff;color:#111b2e}
+body.light-theme .mainhead h2,body.light-theme .filters b,body.light-theme .sidehead,body.light-theme .turn b,body.light-theme .next b{color:#111b2e}
+body.light-theme .next select{color:#111b2e;font-weight:800}
+body.light-theme .topcards .turn{color:#fff}body.light-theme .topcards .turn b{color:#fff}body.light-theme .topcards .next{color:#111b2e}body.light-theme .topcards .next b{color:#111b2e}body.light-theme .topcards .next small{color:#243149;font-weight:700}
+body.light-theme .filters b{color:#243149}
+
+body.light-theme .next small{color:#111b2e}
+body.light-theme .activity-period span,body.light-theme .activity-card small{color:#526177}
+@media(max-width:760px){.activity-summary{grid-template-columns:1fr}.activity-detail{grid-template-columns:1fr 1fr}.supfilters{gap:7px}}
+
+@media(max-width:600px){.topbar{background:#111923}.superhead h1{font-size:20px}.metric b{font-size:25px}.supertable{border-radius:10px}.supertable table{min-width:820px}}
+
+
+/* === Selector de tema claro/oscuro === */
+.theme-toggle{min-width:92px;white-space:nowrap}
+body.light-theme{
+  --bg:#eef1f5;--border:#d5dce6;--text:#111b2e;--muted:#66758a;--white:#fff;
+  --navy:#0b1428;--navy2:#17233d;--green:#079b72;--red:#e34b55;--amber:#e6a51c;
+  background:var(--bg);color:var(--text)
+}
+body.light-theme .topbar{background:linear-gradient(135deg,var(--navy),var(--navy2));border-bottom:0}
+body.light-theme .superhead h1{
+  color:#0b1428 !important;
+  font-weight:900;
+  text-shadow:none;
+  opacity:1;
+}
+body.light-theme .brand small{color:#aab4c6}.light-theme .pill{border-color:#39445b;color:#fff}
+body.light-theme .primary{background:var(--green);color:#fff}.light-theme .secondary{background:#fff;color:#111b2e;border-color:var(--border)}
+body.light-theme .login{background:var(--bg)}
+body.light-theme .loginbox,body.light-theme .card,body.light-theme .sidebar,body.light-theme .main,body.light-theme .superbox,body.light-theme .modal{background:#fff;border-color:var(--border);box-shadow:0 10px 30px #0000000b}
+body.light-theme .loginbox h1,body.light-theme .superhead h1{color:var(--navy)}
+body.light-theme .loginbox p,body.light-theme .sub,body.light-theme .rmeta,body.light-theme .metric small{color:var(--muted)}
+body.light-theme .loginbox label,body.light-theme .supfilters label{color:#66758a}
+body.light-theme .loginbox input,body.light-theme .loginbox select,body.light-theme .next select,body.light-theme .filters select,body.light-theme .supfilters input,body.light-theme .supfilters select,body.light-theme .field,body.light-theme .controller input,body.light-theme .closure-detail{background:#fff;color:#111b2e;border-color:var(--border)}
+body.light-theme .loginbox input::placeholder,body.light-theme .field::placeholder,body.light-theme .controller input::placeholder,body.light-theme .closure-detail::placeholder{color:#8a96a8}
+body.light-theme .topcards .next{background:#fff}
+body.light-theme .turn{
+  background:#fff;
+  color:#0b1428 !important;
+  box-shadow:0 8px 20px #0b14281a;
+}
+body.light-theme .turn b{
+  color:#0b1428 !important;
+  font-weight:850;
+}
+body.light-theme .turn div{
+  color:#25344d !important;
+}
+body.light-theme .sidebar,body.light-theme .main,body.light-theme .superbox{box-shadow:0 5px 18px #0b14280b}
+body.light-theme .sidehead,body.light-theme .mainhead,body.light-theme .filters,body.light-theme .checks,body.light-theme .finishbar,body.light-theme .closure{border-color:var(--border)}
+body.light-theme .round{border-color:var(--border)}.light-theme .round.sel{background:#f1f3f6}.light-theme .num{background:#eef1f5;color:#536177}.light-theme .sel .num{background:var(--navy);color:#fff}
+.light-theme .round.pendiente .num{background:#eef1f5;color:#536177}.light-theme .round.actual{background:#fff8e8;border-left-color:var(--amber)}.light-theme .round.actual .rmeta{color:#a66a00}.light-theme .round.finalizada .num{background:#e8f8f3;color:#008e69}.light-theme .round.finalizada .rmeta{color:#008e69}
+body.light-theme .status-dot{background:#c7ced8}.light-theme .round.finalizada .status-dot{background:var(--green)}.light-theme .round.actual .status-dot{background:var(--amber);box-shadow:0 0 0 3px #fff3d5}
+body.light-theme .notify{background:#fff;color:#111b2e;border-color:var(--navy)}
+body.light-theme .date{background:#fff;border-color:var(--border);color:#111b2e}.light-theme .date input{background:transparent;color:#111b2e}
+body.light-theme .toggle{border-color:#dbe2ea}.light-theme .toggle button{background:#fff;color:#66758a}.light-theme .toggle .on{background:var(--green);color:#fff}.light-theme .toggle .off{background:var(--red);color:#fff}
+body.light-theme .field{color:#111b2e}.light-theme .obs{background:#fff}.light-theme .history span{border-color:#dce3ec;color:#8a97a8}.light-theme .history .cur{border-color:#79d7c0;color:#008e69;background:#eefbf7}
+body.light-theme .thead{background:#fafbfc;color:#7d8aa0}.light-theme .row{border-color:#edf0f4}.light-theme .avatar{background:var(--navy)}.light-theme .employee small{color:#8a96a8}
+body.light-theme .checkrow{border-color:#edf0f4}.light-theme .yesno button{background:#fff;color:#111b2e;border-color:var(--border)}.light-theme .yesno .yes{background:var(--green);color:#fff}.light-theme .yesno .no{background:var(--red);color:#fff}
+body.light-theme .locked-note{background:#f5f8fb;color:#607087;border-color:var(--border)}.light-theme .closure{background:#fff}.light-theme .closure-done{background:#effcf8;color:#008e69}.light-theme .closure-detail{color:#111b2e}
+body.light-theme .super{background:var(--bg)}.light-theme .suphead h1{color:var(--navy)}.light-theme .supfilters input,.light-theme .supfilters select{background:#fff;border-color:var(--border);color:#111b2e}.light-theme .supertable table{background:#fff}.light-theme .supertable th,.light-theme .supertable td{border-color:#edf0f4}.light-theme .supertable th{background:#f5f7fa;color:#65748a}.light-theme .supertable td{color:#243149}.light-theme .metric{background:#fff;border-color:var(--border)}.light-theme .metric b{color:var(--navy)}
+body.light-theme .metric:nth-child(2):before{background:var(--green)}.light-theme .metric:nth-child(3):before{background:var(--red)}.light-theme .metric:nth-child(4):before{background:var(--amber)}
+body.light-theme .add-employee{background:#f7fafc;border-color:#dfe6ed}.light-theme .att-row{border-color:#dfe6ed;background:#fff}.light-theme .att-role{color:#8a97a8}.light-theme .foot{border-color:#edf0f4;color:var(--muted)}
+body.light-theme .close{color:#66758a}.light-theme .modal-bg{background:#10182b99}
+
+</style>
+</head>
+<body>
+
+<section id="loginView" class="login">
+  <div class="loginbox">
+    <div class="logo">R</div>
+    <h1>Rondas</h1>
+    <p>Control de asistencia y actividad operativa</p>
+    <label>Nombre
+      <input id="authName" placeholder="Ej. Juan Pérez">
+    </label>
+    <label>Correo
+      <input id="authEmail" type="email" placeholder="correo@empresa.com">
+    </label>
+    <label>Contraseña
+      <input id="authPassword" type="password" placeholder="Mínimo 6 caracteres">
+    </label>
+    <label>Perfil
+      <select id="authRole" onchange="toggleCode()">
+        <option value="controlador">Controlador</option>
+        <option value="supervisor">Supervisor</option>
+      </select>
+    </label>
+    <div id="codeBox" class="codebox">
+      <label>Código de Supervisor
+        <input id="supervisorCode" type="password" placeholder="Ingresá el código">
+      </label>
+    </div>
+    <button class="primary" onclick="enter()">Ingresar / crear usuario</button>
+    <p id="loginMsg"></p>
+    <p class="login-help">Si ya existe el usuario, se inicia sesión. Para Supervisor se valida el código antes de activar el perfil.</p>
+  </div>
+</section>
+
+<section id="appView" class="hidden">
+<header class="topbar">
+  <div class="brand"><div class="logo">R</div><div><b>Rondas</b><small>Control operativo</small></div></div>
+  <div class="grow"></div><div class="pill" id="userBadge"></div><button class="theme-toggle secondary" onclick="toggleTheme()" type="button">☀ Claro</button><button class="secondary" onclick="switchToSupervisor()">Supervisor</button><button class="primary" onclick="logout()">Salir</button>
+</header>
+<main class="layout">
+  <section class="topcards">
+    <div class="turn card"><b id="shiftName"></b><div id="shiftTimes"></div></div>
+    <div class="next card"><b>Turno</b><select id="shiftTop" onchange="changeShift(this.value)"></select><small id="nextInfo"></small></div>
+  </section>
+  <aside class="sidebar">
+    <div class="sidehead">Rondas programadas</div><div id="rounds"></div>
+    <button class="notify" onclick="requestAlarms()">🔔 Activar alarmas 5 min antes</button><div class="alarm-box"><b>Alarmas de rondas</b><span class="alarm-status" id="alarmStatus">Sin activar</span></div>
+  </aside>
+  <section class="main">
+    <div class="mainhead">
+      <div><h2 id="title"></h2><div class="sub">Asistencia y actividad de la ronda.</div></div>
+      <div class="date">📅 <input id="date" type="date" onchange="changeDate(this.value)"></div>
+      <div class="stats"><span class="badge ag">Activos <b id="act">0</b></span><span class="badge ar">Inactivos <b id="ina">0</b></span></div>
+      <button class="load primary" onclick="openAttendance()">Cargar asistencia</button>
+    </div>
+    <div class="filters">
+      <b>Turno:</b><select id="shiftFilter" onchange="changeShift(this.value)"></select>
+      <b>Ronda:</b><select id="roundFilter" onchange="selectRound(this.value)"></select>
+    </div>
+    <div class="tablewrap"><div class="table">
+      <div class="thead"><div>EMPLEADO</div><div>ACTIVIDAD</div><div>TAREA</div><div>OBSERVACIONES</div><div>HISTORIAL</div></div>
+      <div id="rows"></div>
+    </div></div>
+    <div class="checks">
+      <h3>Estado general de la ronda</h3>
+      <div id="checkRows"></div>
+    </div>
+    <div id="lockedNote" class="locked-note hidden">🔒 Esta ronda está finalizada y sus datos ya no se pueden editar.</div>
+    <div id="closureBox" class="closure hidden"></div>
+    <div class="finishbar"><button id="finishBtn" class="primary" onclick="finishRound()">Finalizar ronda</button></div>
+  </section>
+</main>
+</section>
+
+<section id="supervisorView" class="super hidden">
+<header class="topbar">
+  <div class="brand"><div class="logo">R</div><div><b>Rondas</b><small>Panel Supervisor</small></div></div>
+  <div class="grow"></div><div class="pill" id="supBadge"></div><button class="theme-toggle secondary" onclick="toggleTheme()" type="button">☀ Claro</button><button class="secondary" onclick="switchToController()">Controlador</button><button class="primary" onclick="logout()">Salir</button>
+</header>
+<div class="superlayout">
+  <div class="superhead"><h1>Panel de Supervisor</h1><div class="grow"></div><div class="supactions"><button class="secondary" onclick="loadSupervisor()">Actualizar</button><button class="primary" onclick="exportCSV()">Exportar CSV</button></div></div>
+  <div class="supbox card" style="padding:14px">
+    <div class="supfilters">
+      <label>Desde <input id="supFrom" type="date" onchange="loadSupervisor()"></label>
+      <label>Hasta <input id="supTo" type="date" onchange="loadSupervisor()"></label>
+      <label>Turno <select id="supShift" onchange="loadSupervisor()"><option value="">Todos</option></select></label>
+      <label>Ronda <select id="supRound" onchange="loadSupervisor()"><option value="">Todas</option></select></label>
+      <label>Empleado <select id="supEmployee" onchange="loadSupervisor()"><option value="">Todos</option></select></label>
+      <label>Tarea <select id="supTask" onchange="loadSupervisor()"><option value="">Todas</option></select></label>
+    </div>
+  </div>
+  <div class="summary">
+    <div class="metric card"><small>Registros de actividad</small><b id="mRecords">0</b></div>
+    <div class="metric card"><small>Activos</small><b id="mActive">0</b></div>
+    <div class="metric card"><small>Inactivos</small><b id="mInactive">0</b></div>
+    <div class="metric card"><small>Rondas finalizadas</small><b id="mDone">0</b></div>
+  </div>
+  <div class="activity-summary">
+    <div class="activity-card card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <h3>Promedio de actividad</h3>
+        <select id="activityPeriodFilter" class="field" style="width:auto;height:32px" onchange="loadActivityAverage()">
+          <option value="day">Día</option>
+          <option value="week" selected>Última semana</option>
+          <option value="month">Último mes</option>
+        </select>
+      </div>
+      <div class="big" id="activityAverage">—</div>
+      <small id="activityAverageNote">Seleccioná un empleado para calcularlo.</small>
+    </div>
+    <div class="activity-card card">
+      <div class="activity-detail" id="activityPeriods">
+        <div class="activity-period">
+          <strong class="activity-period-title">Hoy</strong>
+          <b id="activityTodayValue">—</b>
+          <span id="activityTodayDetail">Sin datos</span>
+        </div>
+        <div class="activity-period">
+          <strong class="activity-period-title">Última semana</strong>
+          <b id="activityWeekValue">—</b>
+          <span id="activityWeekDetail">Sin datos</span>
+        </div>
+        <div class="activity-period">
+          <strong class="activity-period-title">Último mes</strong>
+          <b id="activityMonthValue">—</b>
+          <span id="activityMonthDetail">Sin datos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="superbox supertable"><table><thead><tr><th>Fecha</th><th>Turno</th><th>Ronda</th><th>Hora real</th><th>Empleado</th><th>Estado</th><th>Tarea</th><th>Observación</th><th>Quitado</th><th>Controlador</th></tr></thead><tbody id="supRows"></tbody></table></div>
+</div>
+</section>
+
+<div class="modal-bg" id="attendanceModal"><div class="modal">
+  <button class="close" onclick="closeAttendance()">×</button>
+  <div class="att-head"><div><h2>Cargar asistencia</h2><div class="att-sub" id="attSub"></div></div><button class="secondary add-att" onclick="toggleAddEmployee()">＋ Agregar funcionario</button></div>
+  <div id="addEmployeeBox" class="add-employee hidden">
+    <div class="add-title">Agregar funcionario</div>
+    <div class="add-grid">
+      <input id="newEmployeeName" class="field" placeholder="Nombre y apellido">
+      <select id="newEmployeePosition" class="field">
+        <option value="">Seleccionar cargo...</option>
+        <option value="Operario">Operario</option>
+        <option value="Limpieza">Limpieza</option>
+        <option value="Chofer">Chofer</option>
+      </select>
+      <button class="primary" onclick="addEmployeeFromAttendance()">Agregar</button>
+    </div>
+  </div>
+  <div id="attList"></div>
+  <div class="controller"><b>Controlador:</b><input id="controllerName" readonly></div>
+  <div class="foot"><span id="attCount"></span><button class="primary" onclick="saveAttendance()">Guardar asistencia</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL="https://fgmbknekocrtycptrcpy.supabase.co";
+const SUPABASE_KEY="sb_publishable_MyrXVvJ4lPWR-cwTQCdsOA_JWBnoQEC";
+const SUPERVISOR_CODE="3449.";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let user=null,profile=null,shifts=[],rounds=[],employees=[],tasks=[],alarmTimer=null;
+let state={date:new Date().toISOString().slice(0,10),shiftId:null,roundId:null};
+let shiftAttendance=[],activityMap=new Map(),checks=null,closure=null,supervisorRows=[],saving=Promise.resolve(),roundStatuses=new Map(),supervisorStatusMap=new Map();
+
+const $=id=>document.getElementById(id);
+const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const initials=n=>String(n||"").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
+function isSaturdayDate(date){
+  if(!date)return false;
+  const [y,m,d]=String(date).split("-").map(Number);
+  return new Date(Date.UTC(y,m-1,d)).getUTCDay()===6;
+}
+function morningShift(){return [...shifts].sort((a,b)=>((a.sort_order??0)-(b.sort_order??0)))[0];}
+function roundsForShift(){
+  if(!state.shiftId)return [];
+  const saturday=isSaturdayDate(state.date), morning=morningShift();
+  const base=rounds.filter(r=>r.shift_id===state.shiftId).sort(orderRounds);
+  if(saturday && morning && state.shiftId!==morning.id)return [];
+  if(saturday && morning && state.shiftId===morning.id){
+    const saturdayTimes=["08:30","10:00","11:30"];
+    return base.slice(0,3).map((r,i)=>({...r,time:saturdayTimes[i]||r.time}));
+  }
+  return base;
+}
+function roundForDate(roundId,date){
+  const base=rounds.find(r=>r.id===roundId);
+  if(!base)return null;
+  if(!isSaturdayDate(date))return base;
+  const morning=morningShift();
+  if(!morning || base.shift_id!==morning.id)return base;
+  const baseRounds=rounds.filter(r=>r.shift_id===base.shift_id).sort(orderRounds);
+  const i=baseRounds.findIndex(r=>r.id===roundId);
+  const saturdayTimes=["08:30","10:00","11:30"];
+  return {...base,time:saturdayTimes[i]||base.time};
+}
+function orderRounds(a,b){return ((a.sort_order??0)-(b.sort_order??0))||String(a.time||"").localeCompare(String(b.time||""))}
+function roundIndex(id){return roundsForShift().findIndex(r=>r.id===id)}
+function currentRound(){return roundForDate(state.roundId,state.date)}
+function toast(x){$("toast").textContent=x;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2200)}
+function fail(e){console.error(e);toast(e?.message||"Error de base de datos")}
+function msg(x){$("loginMsg").textContent=x}
+function formatDate(v){return new Intl.DateTimeFormat("es-UY",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(v+"T12:00:00"))}
+function formatTime(v){return new Intl.DateTimeFormat("es-UY",{hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(v))}
+
+function applyTheme(){
+  const theme=localStorage.getItem("rondas_theme")||"dark";
+  document.body.classList.toggle("light-theme",theme==="light");
+  document.querySelectorAll(".theme-toggle").forEach(b=>b.textContent=theme==="light"?"🌙 Oscuro":"☀ Claro");
+}
+function toggleTheme(){
+  const next=document.body.classList.contains("light-theme")?"dark":"light";
+  localStorage.setItem("rondas_theme",next);applyTheme();
+}
+applyTheme();
+
+function alarmKey(date,shiftId,roundId){return `rondas_alarm_${date}_${shiftId}_${roundId}`}
+function nextRoundAlarms(){
+  if(alarmTimer)clearInterval(alarmTimer);
+  alarmTimer=setInterval(checkRoundAlarms,20000);
+  checkRoundAlarms();
+}
+function updateAlarmStatus(){
+  const enabled=localStorage.getItem("rondas_alarms")==="on";
+  const el=$("alarmStatus"); if(el)el.textContent=enabled?"Activas · aviso 5 minutos antes":"Sin activar";
+}
+async function requestAlarms(){
+  if(!('Notification' in window)){toast("Este navegador no permite notificaciones.");return}
+  const permission=await Notification.requestPermission();
+  if(permission!=="granted"){toast("No se habilitaron las notificaciones.");return}
+  localStorage.setItem("rondas_alarms","on");updateAlarmStatus();checkRoundAlarms();toast("Alarmas activadas: aviso 5 minutos antes.");
+}
+function checkRoundAlarms(){
+  updateAlarmStatus();
+  if(localStorage.getItem("rondas_alarms")!=="on"||!user||!state.shiftId)return;
+  const rs=roundsForShift(),now=new Date();
+  for(const r of rs){
+    const done=roundStatuses.get(r.id)?.completed===true;if(done)continue;
+    const time=String(r.time||"").slice(0,5);if(!/^\d{2}:\d{2}$/.test(time))continue;
+    const target=new Date(`${state.date}T${time}:00`);
+    const diff=target-now;
+    if(diff>0&&diff<=5*60*1000){
+      const key=alarmKey(state.date,state.shiftId,r.id);if(localStorage.getItem(key))continue;
+      localStorage.setItem(key,"1");
+      const text=`La ronda de las ${time} comienza en 5 minutos.`;
+      toast(`🔔 ${text}`);
+      if('Notification' in window&&Notification.permission==="granted")new Notification("Rondas · Próxima ronda",{body:text});
+    }
+  }
+}
+updateAlarmStatus();
+
+function toggleCode(){$("codeBox").style.display=$("authRole").value==="supervisor"?"block":"none"}
+
+async function enter(){
+  const name=$("authName").value.trim(),email=$("authEmail").value.trim(),password=$("authPassword").value;
+  const requested=$("authRole").value,code=$("supervisorCode").value.trim();
+  if(!name||!email||password.length<6){msg("Completá nombre, correo y contraseña.");return}
+  if(requested==="supervisor"&&code!==SUPERVISOR_CODE){msg("Código de Supervisor incorrecto.");return}
+
+  let s=await sb.auth.signInWithPassword({email,password});
+  if(s.error){
+    let r=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});
+    if(r.error&&!r.error.message.toLowerCase().includes("already")){msg(r.error.message);return}
+    s=await sb.auth.signInWithPassword({email,password});
+  }
+  if(s.error){msg(s.error.message);return}
+  user=s.data.user;
+  await loadProfile(name);
+
+  if(requested==="supervisor" && profile.role!=="supervisor"){
+    const rpc=await sb.rpc("set_my_profile_role",{requested_role:"supervisor",supervisor_code:SUPERVISOR_CODE});
+    if(rpc.error){msg("No se pudo activar Supervisor. Primero actualizá la función SQL del proyecto.");console.error(rpc.error);return}
+    if(rpc.data!==true){msg("El servidor rechazó el código de Supervisor.");return}
+    await loadProfile(name);
+  }
+  if(requested==="supervisor"&&profile.role!=="supervisor"){msg("No se pudo activar el perfil de Supervisor.");return}
+  localStorage.setItem("rondas_access_mode",requested);
+  await start(requested);
+}
+
+async function loadProfile(name){
+  let r=await sb.from("profiles").select("*").eq("id",user.id).maybeSingle();
+  if(r.error){fail(r.error);return}
+  if(!r.data){
+    let ins=await sb.from("profiles").insert({id:user.id,full_name:name,role:"controlador"});
+    if(ins.error){fail(ins.error);return}
+  }
+  r=await sb.from("profiles").select("*").eq("id",user.id).single();
+  profile=r.data;
+}
+
+async function start(mode){
+  mode = mode || localStorage.getItem("rondas_access_mode") || "controlador";
+  $("loginView").classList.add("hidden");
+  if(mode==="supervisor"){
+    $("appView").classList.add("hidden");$("supervisorView").classList.remove("hidden");
+    $("supBadge").textContent=(profile.full_name||"Supervisor")+" · Supervisor";
+    await loadData();setupSupervisorFilters();await loadSupervisor();
+  }else{
+    $("supervisorView").classList.add("hidden");$("appView").classList.remove("hidden");
+    $("userBadge").textContent=(profile.full_name||"Controlador")+" · Controlador";
+    $("date").value=state.date;await loadData();nextRoundAlarms();
+  }
+}
+
+async function loadData(){
+  let a=await sb.from("shifts").select("*").eq("active",true).order("sort_order");if(a.error)return fail(a.error);shifts=a.data||[];
+  let b=await sb.from("rounds").select("*").eq("active",true).order("sort_order");if(b.error)return fail(b.error);rounds=b.data||[];
+  let c=await sb.from("employees").select("*").eq("active",true).order("full_name");if(c.error)return fail(c.error);employees=c.data||[];
+  let d=await sb.from("tasks").select("*").eq("active",true).order("name");if(d.error)return fail(d.error);tasks=d.data||[];
+  if(!state.shiftId)state.shiftId=shifts[0]?.id;
+  if(isSaturdayDate(state.date)){
+    const morning=morningShift();
+    if(morning)state.shiftId=morning.id;
+  }
+  const rs=roundsForShift();if(!state.roundId||!rs.some(r=>r.id===state.roundId))state.roundId=rs[0]?.id;
+  await loadShiftAttendance();await loadActivity();await loadRoundStatuses();await loadChecks();await loadClosure();renderSelectors();render();
+}
+
+async function loadShiftAttendance(){
+  if(!state.shiftId)return;
+  const r=await sb.from("shift_attendance").select("*").eq("control_date",state.date).eq("shift_id",state.shiftId);
+  if(r.error)return fail(r.error);shiftAttendance=r.data||[];
+}
+async function loadActivity(){
+  if(!state.shiftId||!state.roundId)return;
+  const r=await sb.from("attendance").select("*").eq("control_date",state.date).eq("shift_id",state.shiftId);
+  if(r.error)return fail(r.error);
+  activityMap=new Map();
+  for(const x of (r.data||[])){
+    if(!activityMap.has(x.round_id))activityMap.set(x.round_id,new Map());
+    activityMap.get(x.round_id).set(x.employee_id,x);
+  }
+}
+async function loadRoundStatuses(){
+  roundStatuses=new Map();
+  if(!state.shiftId)return;
+  const r=await sb.from("round_status").select("round_id,completed").eq("control_date",state.date).eq("shift_id",state.shiftId);
+  if(r.error)return fail(r.error);
+  for(const x of (r.data||[]))roundStatuses.set(x.round_id,x);
+}
+async function loadChecks(){
+  if(!state.shiftId||!state.roundId)return;
+  const r=await sb.from("round_status").select("*").eq("control_date",state.date).eq("shift_id",state.shiftId).eq("round_id",state.roundId).maybeSingle();
+  if(r.error)return fail(r.error);checks=r.data||null;
+}
+async function loadClosure(){
+  closure=null;
+  if(!state.shiftId)return;
+  const rs=roundsForShift();
+  const last=rs.length&&rs[rs.length-1].id===state.roundId;
+  if(!last)return;
+  const r=await sb.from("shift_closures").select("*").eq("control_date",state.date).eq("shift_id",state.shiftId).maybeSingle();
+  if(r.error)return fail(r.error);closure=r.data||null;
+}
+
+function renderSelectors(){
+  const availableShifts=isSaturdayDate(state.date)?[morningShift()].filter(Boolean):shifts;
+  const opts=availableShifts.map(s=>`<option value="${s.id}" ${s.id===state.shiftId?"selected":""}>${esc(s.name)}</option>`).join("");
+  $("shiftTop").innerHTML=opts;$("shiftFilter").innerHTML=opts;
+  const rs=roundsForShift();
+  $("roundFilter").innerHTML=rs.map(r=>`<option value="${r.id}" ${r.id===state.roundId?"selected":""}>${String(r.time||"").slice(0,5)}</option>`).join("");
+  const s=shifts.find(x=>x.id===state.shiftId),r=currentRound();
+  $("shiftName").textContent=s?.name||"";$("shiftTimes").textContent="◷ "+rs.map(x=>String(x.time||"").slice(0,5)).join(" • ");
+  $("title").textContent=`Ronda ${String(r?.time||"").slice(0,5)} · ${s?.name||""}`;
+  const i=rs.findIndex(x=>x.id===state.roundId);$("nextInfo").textContent=i>=0&&rs[i+1]?`Próxima ronda ${String(rs[i+1].time||"").slice(0,5)}`:"";
+}
+
+function isRemovedBeforeOrAt(employeeId){
+  const current=roundIndex(state.roundId);
+  for(const [rid,map] of activityMap){
+    const x=map.get(employeeId);
+    if(x?.removed_from_round===true && roundIndex(rid)<=current)return true;
+  }
+  return false;
+}
+function attendancePresent(employeeId){
+  return shiftAttendance.some(x=>x.employee_id===employeeId&&x.attended===true);
+}
+function visibleEmployees(){
+  const current=roundIndex(state.roundId);
+  return employees.filter(e=>{
+    if(!attendancePresent(e.id))return false;
+    for(const [rid,map] of activityMap){
+      const x=map.get(e.id);
+      if(x?.removed_from_round===true && roundIndex(rid)<=current)return false;
+    }
+    return true;
+  });
+}
+
+function render(){
+  renderRounds();
+  const currentMap=activityMap.get(state.roundId)||new Map(), visible=visibleEmployees();
+  const locked=checks?.completed===true;
+  $("rows").innerHTML=visible.map(e=>{
+    const x=currentMap.get(e.id)||{present:null,task_id:null,observation:""};
+    const active=x.present===true,inactive=x.present===false;
+    return `<div class="row ${locked?"locked":""}" data-employee-id="${e.id}">
+      <div class="employee"><div class="avatar">${initials(e.full_name)}</div><div>${esc(e.full_name)}<small>${esc(e.position||e.role||"")}</small></div></div>
+      <div class="activity-actions"><div class="toggle"><button class="${active?"on":""}" ${locked?"disabled":""} onclick="setActivity('${e.id}',true)">ACTIVO</button><button class="${inactive?"off":""}" ${locked?"disabled":""} onclick="setActivity('${e.id}',false)">INACTIVO</button></div>
+      ${roundIndex(state.roundId)>0?`<button class="danger remove" ${locked?"disabled":""} onclick="removeFromRound('${e.id}')">Quitar</button>`:""}</div>
+      <select class="field task-field" ${locked?"disabled":""} onchange="saveField('${e.id}','task_id',this.value)"><option value="">Seleccionar tarea...</option>${tasks.map(t=>`<option value="${t.id}" ${x.task_id===t.id?"selected":""}>${esc(t.name)}</option>`).join("")}</select>
+      <input class="field obs obs-field" ${locked?"disabled":""} value="${esc(x.observation||"")}" placeholder="Observaciones..." onchange="saveField('${e.id}','observation',this.value)">
+      <div class="history">${roundsForShift().map(r=>`<span class="${r.id===state.roundId?"cur":""}">${String(r.time||"").slice(0,5)}</span>`).join("")}</div>
+    </div>`;
+  }).join("") || `<div style="padding:22px;color:#738198">No hay funcionarios cargados en esta ronda. Usá “Cargar asistencia” en la primera ronda.</div>`;
+  const vals=visible.map(e=>currentMap.get(e.id)).filter(Boolean);
+  $("act").textContent=vals.filter(x=>x.present===true).length;
+  $("ina").textContent=vals.filter(x=>x.present===false).length;
+  renderChecks();
+  renderClosure();
+  $("lockedNote").classList.toggle("hidden",!locked);
+  $("finishBtn").disabled=locked;
+  $("finishBtn").textContent=locked?"Ronda finalizada":"Finalizar ronda";
+}
+
+function renderRounds(){
+  const rs=roundsForShift();
+  $("rounds").innerHTML=rs.map((r,i)=>{
+    const done=roundStatusDone(r.id);
+    const current=!done && r.id===state.roundId;
+    const status=done?"finalizada":current?"actual":"pendiente";
+    const label=done?"Finalizada":current?"Ronda actual":"Pendiente";
+    const doneRow=roundStatuses.get(r.id); const actualTime=doneRow?.completed_at?formatTime(doneRow.completed_at):""; return `<div class="round ${r.id===state.roundId?"sel":""} ${status}" onclick="selectRound('${r.id}')"><div class="num">${i+1}</div><div class="round-info"><b>${String(r.time||"").slice(0,5)}</b><div class="rmeta"><span class="status-dot"></span>${label}</div>${actualTime?`<span class="actual-time">✓ realizada ${actualTime}</span>`:""}</div></div>`;
+  }).join("");
+}
+function roundStatusDone(id){
+  return roundStatuses.get(id)?.completed===true;
+}
+
+function renderChecks(){
+  const items=[
+    ["clean_area","Área limpia y despejada"],
+    ["picking","Picking en ejecución"],
+    ["communication","Comunicación entre operarios correcta"],
+    ["equipment","Uso correcto de equipos y herramientas"]
+  ];
+  $("checkRows").innerHTML=items.map(([key,label])=>{
+    const v=checks?.[key];return `<div class="checkrow"><span>${label}</span><div class="yesno"><button ${checks?.completed===true?"disabled":""} class="${v===true?"yes":""}" onclick="setCheck('${key}',true)">Sí</button><button ${checks?.completed===true?"disabled":""} class="${v===false?"no":""}" onclick="setCheck('${key}',false)">No</button></div></div>`;
+  }).join("");
+}
+
+function renderClosure(){
+  const box=$("closureBox");
+  const rs=roundsForShift();
+  const isLast=rs.length&&rs[rs.length-1].id===state.roundId;
+  if(!isLast){box.classList.add("hidden");box.innerHTML="";return}
+  box.classList.remove("hidden");
+  const done=closure?.completed===true;
+  const tasksDone=closure?.tasks_completed;
+  const conflicts=closure?.delays_conflicts;
+  box.innerHTML=`<h3>Cierre de turno</h3>
+    <div class="checkrow"><span>¿Se cumplieron todas las tareas asignadas?</span><div class="yesno"><button ${done?"disabled":""} class="${tasksDone===true?"yes":""}" onclick="setClosure('tasks_completed',true)">Sí</button><button ${done?"disabled":""} class="${tasksDone===false?"no":""}" onclick="setClosure('tasks_completed',false)">No</button></div></div>
+    <div class="checkrow"><span>¿Se presentaron demoras o conflictos?</span><div class="yesno"><button ${done?"disabled":""} class="${conflicts===true?"yes":""}" onclick="setClosure('delays_conflicts',true)">Sí</button><button ${done?"disabled":""} class="${conflicts===false?"no":""}" onclick="setClosure('delays_conflicts',false)">No</button></div></div>
+    ${conflicts===true?`<div><label style="font-size:11px;font-weight:800;color:#66758a">Detalle de demoras o conflictos</label><textarea class="closure-detail" ${done?"disabled":""} onchange="setClosure('detail',this.value)" placeholder="Describí lo ocurrido...">${esc(closure?.detail||"")}</textarea></div>`:""}
+    ${done?`<div class="closure-done">✓ Turno cerrado. El cierre quedó bloqueado para edición.</div>`:`<div class="closure-actions"><button class="primary" onclick="finishShift()">Cerrar turno</button></div>`}`;
+}
+
+async function setClosure(key,value){
+  if(closure?.completed===true)return;
+  const payload={control_date:state.date,shift_id:state.shiftId,controller_id:user.id,controller_name:profile.full_name,...closure,[key]:value,completed:false};
+  delete payload.id;delete payload.created_at;delete payload.updated_at;
+  const r=await sb.from("shift_closures").upsert(payload,{onConflict:"control_date,shift_id"});
+  if(r.error){fail(r.error);return}
+  await loadClosure();render();
+}
+
+async function finishShift(){
+  if(checks?.completed!==true){toast("Primero finalizá la última ronda.");return}
+  if(closure?.tasks_completed!==true&&closure?.tasks_completed!==false){toast("Respondé si se cumplieron todas las tareas asignadas.");return}
+  if(closure?.delays_conflicts!==true&&closure?.delays_conflicts!==false){toast("Respondé si hubo demoras o conflictos.");return}
+  if(closure?.delays_conflicts===true&&!String(closure?.detail||"").trim()){toast("Agregá el detalle de las demoras o conflictos.");return}
+  const payload={control_date:state.date,shift_id:state.shiftId,controller_id:user.id,controller_name:profile.full_name,tasks_completed:closure.tasks_completed,delays_conflicts:closure.delays_conflicts,detail:closure.detail||null,completed:true};
+  const r=await sb.from("shift_closures").upsert(payload,{onConflict:"control_date,shift_id"});
+  if(r.error){fail(r.error);return}
+  await loadClosure();render();toast("Turno cerrado");
+}
+
+async function saveActivity(employeeId,changes){
+  if(checks?.completed===true){toast("Esta ronda ya está finalizada y no se puede editar.");return false}
+  const existing=activityMap.get(state.roundId)?.get(employeeId)||null;
+  const payload={
+    control_date:state.date,shift_id:state.shiftId,round_id:state.roundId,employee_id:employeeId,
+    controller_id:user.id,controller_name:profile.full_name,
+    present:existing?.present??null,task_id:existing?.task_id??null,observation:existing?.observation??null,
+    removed_from_round:existing?.removed_from_round===true,
+    ...changes
+  };
+  const r=await sb.from("attendance").upsert(payload,{onConflict:"control_date,shift_id,round_id,employee_id"});
+  if(r.error){fail(r.error);return false}
+  await loadActivity();render();return true;
+}
+function queueSave(fn){saving=saving.then(fn).catch(fail);return saving}
+async function setActivity(id,present){return queueSave(()=>saveActivity(id,{present}))}
+async function saveField(id,key,value){return queueSave(()=>saveActivity(id,{[key]:value||null}))}
+
+async function removeFromRound(id){
+  if(checks?.completed===true){toast("Esta ronda ya está finalizada y no se puede editar.");return}
+  if(roundIndex(state.roundId)<=0){toast("Quitar está disponible desde la segunda ronda.");return}
+  const e=employees.find(x=>x.id===id);
+  if(!confirm(`¿Quitar a ${e?.full_name||"este funcionario"} de esta ronda y las siguientes? Las rondas anteriores quedan registradas.`))return;
+
+  // Bloqueamos esta operación para que nunca compita con un guardado de estado/tarea.
+  await saving;
+  const existing=activityMap.get(state.roundId)?.get(id)||null;
+
+  // Si ya existe el registro de actividad, solo marcamos removed_from_round.
+  // Así no destruimos el estado/tarea y evitamos enviar NULL a columnas NOT NULL.
+  if(existing){
+    const r=await sb.from("attendance")
+      .update({removed_from_round:true,controller_id:user.id,controller_name:profile.full_name})
+      .eq("control_date",state.date)
+      .eq("shift_id",state.shiftId)
+      .eq("round_id",state.roundId)
+      .eq("employee_id",id);
+    if(r.error){fail(r.error);return}
+  }else{
+    // No había actividad todavía. Creamos una marca válida usando present=false;
+    // la vista la oculta por removed_from_round y por tanto NO se interpreta como ausencia.
+    const r=await sb.from("attendance").upsert({
+      control_date:state.date,shift_id:state.shiftId,round_id:state.roundId,employee_id:id,
+      controller_id:user.id,controller_name:profile.full_name,
+      present:false,task_id:null,observation:null,removed_from_round:true
+    },{onConflict:"control_date,shift_id,round_id,employee_id"});
+    if(r.error){fail(r.error);return}
+  }
+
+  await loadActivity();
+  render();
+  toast(`${e?.full_name||"Funcionario"} fue quitado de esta ronda y las siguientes.`);
+}
+
+async function openAttendance(){
+  if(roundIndex(state.roundId)!==0){toast("La asistencia se carga solamente en la primera ronda del turno.");return}
+  await loadShiftAttendance();
+  $("addEmployeeBox").classList.add("hidden");
+  $("newEmployeeName").value="";$("newEmployeePosition").value="";
+  const map=new Map(shiftAttendance.map(x=>[x.employee_id,x]));
+  $("attSub").textContent=`${formatDate(state.date)} · ${shifts.find(s=>s.id===state.shiftId)?.name} · primera ronda`;
+  $("controllerName").value=profile.full_name;
+  renderAttendanceList(map);
+  updateAttCount();$("attendanceModal").style.display="flex";
+}
+function renderAttendanceList(map){
+  $("attList").innerHTML=employees.map(e=>{
+    const a=map.get(e.id);return `<div class="att-row"><div><b>${esc(e.full_name)}</b><span class="att-role">${esc(e.position||e.role||"")}</span></div><input type="checkbox" ${a?.attended===true?"checked":""} onchange="setDraftAttendance('${e.id}',this.checked)"><button class="trash danger" onclick="setDraftAttendance('${e.id}',false)">No asiste</button></div>`;
+  }).join("");
+}
+function toggleAddEmployee(){
+  const box=$("addEmployeeBox");box.classList.toggle("hidden");
+  if(!box.classList.contains("hidden"))$("newEmployeeName").focus();
+}
+async function addEmployeeFromAttendance(){
+  const name=$("newEmployeeName").value.trim();
+  const position=$("newEmployeePosition").value;
+  if(!name){toast("Ingresá el nombre del funcionario.");return}
+  if(!position){toast("Seleccioná el cargo.");return}
+  const r=await sb.from("employees").insert({full_name:name,position,active:true}).select().single();
+  if(r.error){fail(r.error);return}
+  employees=[...employees,r.data].sort((a,b)=>String(a.full_name||"").localeCompare(String(b.full_name||"")));
+  $("newEmployeeName").value="";$("newEmployeePosition").value="";
+  $("addEmployeeBox").classList.add("hidden");
+  renderAttendanceList(new Map(shiftAttendance.map(x=>[x.employee_id,x])));
+  updateAttCount();
+  toast(`${r.data.full_name} fue agregado. Ahora podés marcar su asistencia.`);
+}
+async function setDraftAttendance(id,attended){
+  const existing=shiftAttendance.find(x=>x.employee_id===id);
+  const payload={control_date:state.date,shift_id:state.shiftId,employee_id:id,attended,controller_id:user.id,controller_name:profile.full_name};
+  const r=await sb.from("shift_attendance").upsert(payload,{onConflict:"control_date,shift_id,employee_id"});
+  if(r.error){fail(r.error);return}
+  await loadShiftAttendance();updateAttCount();
+}
+function updateAttCount(){$("attCount").textContent=`${shiftAttendance.filter(x=>x.attended===true).length} de ${employees.length} con asistencia`}
+
+async function saveAttendance(){closeAttendance();await loadShiftAttendance();render();toast("Asistencia guardada")}
+function closeAttendance(){$("attendanceModal").style.display="none"}
+
+async function setCheck(key,value){
+  if(checks?.completed===true){toast("Esta ronda ya está finalizada y no se puede editar.");return}
+  const payload={control_date:state.date,shift_id:state.shiftId,round_id:state.roundId,controller_id:user.id,controller_name:profile.full_name,[key]:value};
+  const r=await sb.from("round_status").upsert(payload,{onConflict:"control_date,shift_id,round_id"});
+  if(r.error){fail(r.error);return}
+  await loadChecks();render();
+}
+async function finishRound(){
+  if(checks?.completed===true){toast("Esta ronda ya está finalizada.");return}
+  const visible=visibleEmployees(),map=activityMap.get(state.roundId)||new Map();
+  const missing=visible.filter(e=>{const x=map.get(e.id);return !x|| (x.present!==true&&x.present!==false)||!x.task_id});
+  if(missing.length){toast("Falta completar estado y tarea de: "+missing.map(e=>e.full_name).join(", "));return}
+  const required=["clean_area","picking","communication","equipment"];
+  if(!checks||required.some(k=>checks[k]!==true&&checks[k]!==false)){toast("Respondé los 4 controles generales antes de finalizar.");return}
+  const r=await sb.rpc("finalize_round_server",{p_control_date:state.date,p_shift_id:state.shiftId,p_round_id:state.roundId,p_controller_name:profile.full_name});
+  if(r.error){fail(r.error);toast("No se pudo registrar la hora real de la ronda. Ejecutá primero el SQL de finalización del servidor.");return}
+  await loadChecks();await loadRoundStatuses();await loadClosure();render();toast("Ronda finalizada");
+}
+
+async function changeShift(id){
+  if(isSaturdayDate(state.date)){
+    const morning=morningShift();
+    if(!morning || id!==morning.id){toast("Los sábados solo está disponible el Turno Matutino.");return}
+  }
+  state.shiftId=id;state.roundId=roundsForShift().sort(orderRounds)[0]?.id;await loadShiftAttendance();await loadActivity();await loadRoundStatuses();await loadChecks();await loadClosure();renderSelectors();render()
+}
+async function selectRound(id){state.roundId=id;await loadActivity();await loadRoundStatuses();await loadChecks();renderSelectors();render()}
+async function changeDate(v){
+  state.date=v;
+  if(isSaturdayDate(state.date)){
+    const morning=morningShift();if(morning)state.shiftId=morning.id;
+  }
+  state.roundId=roundsForShift().sort(orderRounds)[0]?.id;await loadShiftAttendance();await loadActivity();await loadRoundStatuses();await loadChecks();await loadClosure();renderSelectors();render()
+}
+
+function notify(){toast("Notificación de ronda disparada")}
+
+function setupSupervisorFilters(){
+  const today=new Date().toISOString().slice(0,10),from=new Date(Date.now()-6*86400000).toISOString().slice(0,10);
+  if(!$("supTo").value)$("supTo").value=today;if(!$("supFrom").value)$("supFrom").value=from;
+  $("supShift").innerHTML='<option value="">Todos</option>'+shifts.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  $("supRound").innerHTML='<option value="">Todas</option>'+rounds.sort(orderRounds).map(r=>`<option value="${r.id}">${esc(shifts.find(s=>s.id===r.shift_id)?.name||"")} · ${String(r.time||"").slice(0,5)}</option>`).join("");
+  $("supEmployee").innerHTML='<option value="">Todos</option>'+employees.map(e=>`<option value="${e.id}">${esc(e.full_name)}</option>`).join("");
+  $("supTask").innerHTML='<option value="">Todas</option>'+tasks.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join("");
+}
+
+async function loadActivityAverage(){
+  const emp=$("supEmployee").value;
+  const avg=$("activityAverage"),note=$("activityAverageNote");
+
+  const setPeriod=(prefix,title,value,active,defined)=>{
+    $(prefix+"Value").textContent=value===null?"—":value+"%";
+    $(prefix+"Detail").textContent=defined?`${active}/${defined} activos`:"Sin datos";
+  };
+
+  if(!emp){
+    avg.textContent="—";
+    note.textContent="Seleccioná un empleado para calcularlo.";
+    setPeriod("activityToday","Hoy",null,0,0);
+    setPeriod("activityWeek","Última semana",null,0,0);
+    setPeriod("activityMonth","Último mes",null,0,0);
+    return;
+  }
+
+  const end=$("supTo").value||new Date().toISOString().slice(0,10);
+  const endDate=new Date(end+"T12:00:00");
+  const dates=[
+    {prefix:"activityToday",label:"Hoy",days:0},
+    {prefix:"activityWeek",label:"Última semana",days:6},
+    {prefix:"activityMonth",label:"Último mes",days:29}
+  ];
+  const values=[];
+
+  for(const p of dates){
+    const start=new Date(endDate);
+    start.setDate(start.getDate()-p.days);
+    const from=start.toISOString().slice(0,10);
+    let q=sb.from("attendance").select("present").eq("employee_id",emp).gte("control_date",from).lte("control_date",end);
+    const r=await q;
+    if(r.error){fail(r.error);return}
+
+    const rows=r.data||[];
+    const defined=rows.filter(x=>x.present===true||x.present===false);
+    const active=defined.filter(x=>x.present===true).length;
+    const value=defined.length?Math.round(active/defined.length*100):null;
+
+    values.push({prefix:p.prefix,label:p.label,value,active,defined:defined.length});
+    setPeriod(p.prefix,p.label,value,active,defined.length);
+  }
+
+  const selected=$("activityPeriodFilter")?.value||"week";
+  const chosen=selected==="day"?values[0]:selected==="month"?values[2]:values[1];
+
+  avg.textContent=chosen.value===null?"—":chosen.value+"%";
+  const employee=employees.find(e=>e.id===emp);
+  note.textContent=employee
+    ? `${employee.full_name} · ${chosen.label.toLowerCase()} · ${chosen.active}/${chosen.defined} rondas activas`
+    : "";
+}
+
+async function loadSupervisor(){
+  const from=$("supFrom").value,to=$("supTo").value,shift=$("supShift").value,round=$("supRound").value,emp=$("supEmployee").value,task=$("supTask").value;
+  let q=sb.from("attendance").select("*").gte("control_date",from).lte("control_date",to);
+  if(shift)q=q.eq("shift_id",shift);if(round)q=q.eq("round_id",round);if(emp)q=q.eq("employee_id",emp);if(task)q=q.eq("task_id",task);
+  const a=await q;if(a.error){fail(a.error);return}
+  const rows=a.data||[];supervisorRows=rows;
+  $("mRecords").textContent=rows.length;$("mActive").textContent=rows.filter(x=>x.present===true).length;$("mInactive").textContent=rows.filter(x=>x.present===false).length;
+  const rs=await sb.from("round_status").select("*").gte("control_date",from).lte("control_date",to).eq("completed",true); const statusRows=rs.data||[]; $("mDone").textContent=statusRows.length;
+  const statusMap=new Map(statusRows.map(x=>[`${x.control_date}|${x.shift_id}|${x.round_id}`,x])); supervisorStatusMap=statusMap;
+  $("supRows").innerHTML=rows.map(x=>{
+    const e=employees.find(e=>e.id===x.employee_id),s=shifts.find(s=>s.id===x.shift_id),r=roundForDate(x.round_id,x.control_date),t=tasks.find(t=>t.id===x.task_id); const st=statusMap.get(`${x.control_date}|${x.shift_id}|${x.round_id}`);
+    return `<tr><td>${esc(x.control_date)}</td><td>${esc(s?.name||"")}</td><td>${String(r?.time||"").slice(0,5)}</td><td>${st?.completed_at?formatTime(st.completed_at):"—"}</td><td>${esc(e?.full_name||x.employee_id)}</td><td><span class="sup-status ${x.removed_from_round?"pending":x.present===true?"done":"active"}">${x.removed_from_round?"Quitado":x.present===true?"Activo":x.present===false?"Inactivo":"Sin definir"}</span></td><td>${esc(t?.name||"")}</td><td>${esc(x.observation||"")}</td><td>${x.removed_from_round?"Sí":"No"}</td><td>${esc(x.controller_name||"")}</td></tr>`;
+  }).join("");
+  await loadActivityAverage();
+}
+
+function exportCSV(){
+  const header=["Fecha","Turno","Ronda","Hora real","Empleado","Estado","Tarea","Observación","Quitado","Controlador"];
+  const lines=[header,...supervisorRows.map(x=>{
+    const e=employees.find(e=>e.id===x.employee_id),s=shifts.find(s=>s.id===x.shift_id),r=roundForDate(x.round_id,x.control_date),t=tasks.find(t=>t.id===x.task_id);
+    const st=supervisorStatusMap.get(`${x.control_date}|${x.shift_id}|${x.round_id}`); return [x.control_date,s?.name||"",String(r?.time||"").slice(0,5),st?.completed_at?formatTime(st.completed_at):"",e?.full_name||x.employee_id,x.removed_from_round?"Quitado":x.present===true?"Activo":x.present===false?"Inactivo":"Sin definir",t?.name||"",x.observation||"",x.removed_from_round?"Sí":"No",x.controller_name||""];
+  })].map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+  const blob=new Blob(["\ufeff"+lines],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="rondas-export.csv";a.click();URL.revokeObjectURL(url);
+}
+
+async function switchToSupervisor(){
+  const code=prompt("Ingresá el código de Supervisor:");
+  if(code===null)return;
+  if(code.trim()!==SUPERVISOR_CODE){toast("Código de Supervisor incorrecto.");return}
+  if(profile?.role!=="supervisor"){
+    const rpc=await sb.rpc("set_my_profile_role",{requested_role:"supervisor",supervisor_code:SUPERVISOR_CODE});
+    if(rpc.error){fail(rpc.error);return}
+    if(rpc.data!==true){toast("El servidor rechazó el código de Supervisor.");return}
+    await loadProfile(profile?.full_name||user?.user_metadata?.full_name||"Usuario");
+  }
+  localStorage.setItem("rondas_access_mode","supervisor");
+  await start("supervisor");
+}
+
+async function switchToController(){
+  localStorage.setItem("rondas_access_mode","controlador");
+  await start("controlador");
+}
+
+async function logout(){localStorage.removeItem("rondas_access_mode");await sb.auth.signOut();location.reload()}
+
+(async()=>{
+  const s=await sb.auth.getSession();
+  if(s.data.session){
+    user=s.data.session.user;await loadProfile(user.user_metadata?.full_name||"Usuario");
+    if(profile)await start(localStorage.getItem("rondas_access_mode")||"controlador");
+  }
+})();
+</script>
+</body>
+</html>
