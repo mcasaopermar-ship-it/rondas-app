@@ -818,7 +818,7 @@ async function loadActivityAverage(){
 
 async function loadSupervisor(){
   const from=$("supFrom").value,to=$("supTo").value,shift=$("supShift").value,round=$("supRound").value,emp=$("supEmployee").value,task=$("supTask").value;
-  let q=sb.from("attendance").select("*").gte("control_date",from).lte("control_date",to);
+ let q=sb.from("attendance").select("*").gte("control_date",from).lte("control_date",to).order("control_date",{ascending:false});
   if(shift)q=q.eq("shift_id",shift);if(round)q=q.eq("round_id",round);if(emp)q=q.eq("employee_id",emp);if(task)q=q.eq("task_id",task);
   const a=await q;if(a.error){fail(a.error);return}
   const rows=a.data||[];supervisorRows=rows;
